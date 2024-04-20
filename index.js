@@ -160,7 +160,7 @@ app.post('/images/:url/:productoId', async (req, res) => {
 });
 
 //Elimina de la BBDD las imagenes que pertenecen a un producto con id pasado como parametro
-app.delete('/images/:productoId', async (req, res) => {
+app.delete('/productos-images/:productoId', async (req, res) => {
     const productoId = req.params.productoId;
     try {
         const deletedImages = await deleteImage(productoId);
