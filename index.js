@@ -10,9 +10,12 @@ const { getAllProducts, getProductById, addProduct, deleteProduct, addImage, get
 const app = express();
 const port = 3000;
 
+//Cors policy
 app.use(cors());
-// Servir imágenes estáticas
+//Usa el endpoint de images para referirse a la carpeta imgs
 app.use('/images', express.static(path.join(__dirname, 'imgs')));
+// Middleware para parsear el cuerpo de las solicitudes en formato JSON
+app.use(bodyParser.json());
 
 const storage = multer.diskStorage({
     destination: function (req, file, callback) {
@@ -27,10 +30,13 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 32000000 // Defined in bytes (32 Mb)
+        fileSize: 32000000 // Defined in bytes (32 MB)
     },
 })
 
+/*----------- IMAGES FILES ------------*/
+
+//Elimina del servidor el archivo de la imagen con el nombre pasado como parametro
 app.get('/images/:imagename', (req, res) => {
     const imageName = req.params.imagename;
     const imagePath = path.join(__dirname, 'imgs', imageName);
@@ -45,6 +51,8 @@ app.get('/images/:imagename', (req, res) => {
     });
 });
 
+//Sube a la carpeta de imagenes del servidor una cantidad maxima de 10 imagenes
+//generando un nombre para dicha imagen automaticamente
 app.post('/upload', upload.array('file', 10), function (req, res) {
     const uploadedFileNames = [];
     const uploadedMB = calculateUploadedMbs(req.files);
@@ -61,6 +69,7 @@ app.post('/upload', upload.array('file', 10), function (req, res) {
     console.log('Todo Bien!!!');
 });
 
+//Elimina de la carpeta de imgs del servidor la imagen con el nombre pasado como parametro
 app.delete('/images/:imagename', (req, res) => {
     const imageName = req.params.imagename;
     const imagePath = path.join(__dirname, 'imgs', imageName);
@@ -76,24 +85,22 @@ app.delete('/images/:imagename', (req, res) => {
     });
 });
 
-// API PRODUCTOS
+/* --------- DATABASE ----------- */
 
-// Middleware para parsear el cuerpo de las solicitudes en formato JSON
-app.use(bodyParser.json());
-
-/* PRODUCTOS */
-
+//Devuelve todos los productos de la BBDD en formato JSON
 app.get('/productos', async (req, res) => {
     const products = await getAllProducts();
     res.send(products);
 });
 
+//Devuelve el producto con el id pasado como parametro de BBDD en formato JSON
 app.get('/productos/:id', async (req, res) => {
     const id = req.params.id;
     const product = await getProductById(id);
     res.send(product);
 });
 
+//Añade a la basde de datos en productos pasado como parametro en formato JSON a la BBDD
 app.post('/productos', async (req, res) => {
     const { nombre, descripcion, categoria, precio, precioAmazon, cantidadDisponible } = req.body;
     try {
@@ -105,6 +112,7 @@ app.post('/productos', async (req, res) => {
     }
 });
 
+//Elimina el producto con el id pasado como parametro de la BBDD 
 app.delete('/productos/:id', async (req, res) => {
     const id = req.params.id;
     try {
@@ -121,17 +129,16 @@ app.delete('/productos/:id', async (req, res) => {
     }
 });
 
-
-/* IMAGES */
-
-app.get('/firstImage/:productId', async (req, res) => {
+//Devuelve el String de la primera imagen subida a la BBDD del producto con el id pasado como parametro
+app.get('/producto-firstImage/:productId', async (req, res) => {
     const productId = req.params.productId;
     const imagesUrl = await getFirstImageFromProduct(productId);
     console.log(imagesUrl)
     res.send(imagesUrl);
 });
 
-app.get('/images/:productId', async (req, res) => {
+//Devuelve una lista con todas las imagenes del producto con id pasado como parametro
+app.get('/producto-images/:productId', async (req, res) => {
     const productId = req.params.productId;
     const imagesUrl = await getImagesFromProduct(productId);
     console.log(imagesUrl)
@@ -139,6 +146,7 @@ app.get('/images/:productId', async (req, res) => {
     res.send(urls);
 });
 
+//Añade a la BBDD una imagen con su url correspondiente y el id del producto al que pertenece
 app.post('/images/:url/:productoId', async (req, res) => {
     try {
         const url = req.params.url;
@@ -151,6 +159,7 @@ app.post('/images/:url/:productoId', async (req, res) => {
     }
 });
 
+//Elimina de la BBDD las imagenes que pertenecen a un producto con id pasado como parametro
 app.delete('/images/:productoId', async (req, res) => {
     const productoId = req.params.productoId;
     try {
@@ -167,6 +176,7 @@ app.delete('/images/:productoId', async (req, res) => {
 
 app.listen(port, () => console.log(`listening on port ${port}`));
 
+// Calcula la cantidad de MB que se han subido como imagenes en un producto
 function calculateUploadedMbs(files) {
     let bytes = 0;
     files.forEach(file => {
