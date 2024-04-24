@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 
 const storage = multer.diskStorage({
     destination: function (req, file, callback) {
-        callback(null, '/var/lib/imgs'); // Directorio de imágenes actualizado
+        callback(null, '/var/lib/imgs'); // Directorio de imágenes estatico del servidor entre deploys
     },
     filename: function (req, file, callback) {
         const filename = crypto.randomUUID();
