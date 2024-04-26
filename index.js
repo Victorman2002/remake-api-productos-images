@@ -10,36 +10,38 @@ const { getAllProducts, getProductById, addProduct, deleteProduct, addImage, get
 const app = express();
 const port = 3000;
 
-//Cors policy
+// Cors policy
 app.use(cors());
-//Usa el endpoint de images para referirse a la carpeta imgs
-app.use('/images', express.static(path.join(__dirname, 'imgs')));
+
+// Usar el endpoint de images para referirse a la carpeta imgs en el nuevo directorio estático
+app.use('/images', express.static('/var/lib/imgs'));
+
 // Middleware para parsear el cuerpo de las solicitudes en formato JSON
 app.use(bodyParser.json());
 
 const storage = multer.diskStorage({
     destination: function (req, file, callback) {
-        callback(null, __dirname + '/imgs');
+        callback(null, '/var/lib/imgs'); // Directorio de imágenes estatico del servidor entre deploys
     },
     filename: function (req, file, callback) {
         const filename = crypto.randomUUID();
         callback(null, filename + '.jpg');
     }
-})
+});
 
 const upload = multer({
     storage: storage,
     limits: {
         fileSize: 32000000 // Defined in bytes (32 MB)
-    },
-})
+    }
+});
 
 /*----------- IMAGES FILES ------------*/
 
-//Elimina del servidor el archivo de la imagen con el nombre pasado como parametro
+// Elimina del servidor el archivo de la imagen con el nombre pasado como parametro
 app.get('/images/:imagename', (req, res) => {
     const imageName = req.params.imagename;
-    const imagePath = path.join(__dirname, 'imgs', imageName);
+    const imagePath = path.join('/var/lib/imgs', imageName); // Ruta actualizada
 
     fs.access(imagePath, fs.constants.F_OK, (err) => {
         if (err) {
@@ -51,8 +53,8 @@ app.get('/images/:imagename', (req, res) => {
     });
 });
 
-//Sube a la carpeta de imagenes del servidor una cantidad maxima de 10 imagenes
-//generando un nombre para dicha imagen automaticamente
+// Sube a la carpeta de imagenes del servidor una cantidad maxima de 10 imagenes
+// generando un nombre para dicha imagen automaticamente
 app.post('/upload', upload.array('file', 10), function (req, res) {
     const uploadedFileNames = [];
     const uploadedMB = calculateUploadedMbs(req.files);
@@ -69,10 +71,10 @@ app.post('/upload', upload.array('file', 10), function (req, res) {
     console.log('Todo Bien!!!');
 });
 
-//Elimina de la carpeta de imgs del servidor la imagen con el nombre pasado como parametro
+// Elimina de la carpeta de imgs del servidor la imagen con el nombre pasado como parametro
 app.delete('/images/:imagename', (req, res) => {
     const imageName = req.params.imagename;
-    const imagePath = path.join(__dirname, 'imgs', imageName);
+    const imagePath = path.join('/var/lib/imgs', imageName); // Ruta actualizada
 
     fs.unlink(imagePath, (err) => {
         if (err) {
